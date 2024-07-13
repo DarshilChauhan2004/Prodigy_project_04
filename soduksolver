@@ -1,0 +1,316 @@
+#include <iostream>
+#include <Windows.h>
+#include <conio.h>
+ 
+using namespace std;
+ 
+char sudoku[9][9];
+ 
+void printSudoku(bool);
+void recursiveScan();
+void method1(bool &);
+void method2(bool &);
+bool checkBox(int, int, char);
+ 
+int main()
+{
+    // initialize sudoku[][]
+    for (int i = 0; i < 9; i++)
+    {
+        for (int j = 0; j < 9; j++)
+        {
+            sudoku[i][j] = ' ';
+        }
+    }
+    // print empty grid
+    printSudoku(false);
+    // input sudoku
+    printSudoku(true);
+    system("pause");
+    system("CLS");
+    // solve sudoku
+    recursiveScan();
+    system("pause");
+    return 0;
+}
+ 
+void printSudoku(bool input)
+{
+    // reset cursor position
+    COORD cursor = { 0, 0 };
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cursor);
+    char key;
+    for (int i = 0; i < 9; i++)
+    {
+        for (int j = 0; j < 9; j++)
+        {
+            switch (j)
+            {
+            case 0:
+            {
+                // print grid rows
+                switch (i)
+                {
+                case 1:
+                case 2:
+                case 4:
+                case 5:
+                case 7:
+                case 8:
+                {
+                    cout << char(196)<< char(197)<< char(196)<< char(197)<< char(196)<< char(186)<< char(196)<< char(197)<< char(196)
+                        << char(197)<< char(196)<< char(186)<< char(196)<< char(197)<< char(196)<< char(197)<< char(196)<< '\n';
+                    break;
+                }
+                case 3:
+                case 6:
+                {
+                    cout << char(205)<< char(205)<< char(205)<< char(205)<< char(205)<< char(206)<< char(205)<< char(205)<< char(205)
+                    << char(205)<< char(205)<< char(206)<< char(205)<< char(205)<< char(205)<< char(205)<< char(205)<< '\n';
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+                }
+                break;
+            }
+            // print grid columns
+            case 1:
+            case 2:
+            case 4:
+            case 5:
+            case 7:
+            case 8:
+            {
+                cout << char(179);
+                break;
+            }
+            case 3:
+            case 6:
+            {
+                cout << char(186);
+                break;
+            }
+            default:
+                break;
+            }
+            // get initial sudoku from user
+            if (input)
+            {
+                do
+                {
+                    key = _getch();
+                } while (!strchr("123456789 ", key));
+                sudoku[i][j] = key;
+            }
+            cout << sudoku[i][j];
+        }
+        cout << '\n';
+    }
+}
+ 
+// perform both methods while either method is still successful
+void recursiveScan()
+{
+    bool meth1, meth2;
+    do
+    {
+        printSudoku(false);
+        method1(meth1);
+        method2(meth2);
+        Sleep(500);
+    } while (meth1 || meth2);
+}
+ 
+// test if each box can only be a specific number
+void method1(bool &meth1)
+{
+    meth1 = false;
+    bool boxes[9];
+    for (int i = 0; i < 9; i++)
+    {
+        for (int j = 0; j < 9; j++)
+        {
+            // if current box is already solved, abort
+            if (sudoku[i][j] != ' ')
+            {
+                continue;
+            }
+            // initialize boxes[]
+            for (int k = 0; k < 9; k++)
+            {
+                boxes[k] = true;
+            }
+            // keep track of which numbers this box cannot be
+            for (int ii = 0; ii < 9; ii++)
+            {
+                if (sudoku[ii][j] != ' ')
+                {
+                    boxes[(sudoku[ii][j] - '0') - 1] = false;
+                }
+            }
+            for (int jj = 0; jj < 9; jj++)
+            {
+                if (sudoku[i][jj] != ' ')
+                {
+                    boxes[(sudoku[i][jj] - '0') - 1] = false;
+                }
+            }
+            for (int ii = i - (i % 3); ii < i - (i % 3) + 3; ii++)
+            {
+                for (int jj = j - (j % 3); jj < j - (j % 3) + 3; jj++)
+                {
+                    if (sudoku[ii][jj] != ' ')
+                    {
+                        boxes[(sudoku[ii][jj] - '0') - 1] = false;
+                    }
+                }
+            }
+            // count how many numbers this box can be
+            int options = 0;
+            char answer;
+            for (int k = 0; k < 9; k++)
+            {
+                if (boxes[k] == true)
+                {
+                    options++;
+                    if (options > 1)
+                    {
+                        break;
+                    }
+                    answer = k + 1 + '0';
+                }
+            }
+            // if this box can only be one number, success
+            if (options == 1)
+            {
+                sudoku[i][j] = answer;
+                meth1 = true;
+            }
+        }
+    }
+}
+ 
+// test if each row/column/3x3 box has only one space left for a specific number
+void method2(bool &meth2)
+{
+    meth2 = false;
+    int options;
+    int answeri, answerj;
+    for (char n = '1'; n <= '9'; n++)
+    {
+        for (int i = 0; i < 9; i++)
+        {
+            // keep track of how many boxes in this row can be n
+            options = 0;
+            for (int j = 0; j < 9; j++)
+            {
+                if (checkBox(i, j, n))
+                {
+                    options++;
+                    if (options > 1)
+                    {
+                        break;
+                    }
+                    answerj = j;
+                }
+            }
+            // if only one box in this row can be n, success
+            if (options == 1)
+            {
+                sudoku[i][answerj] = n;
+                meth2 = true;
+            }
+        }
+        for (int j = 0; j < 9; j++)
+        {
+            // keep track of how many boxes in this column can be n
+            options = 0;
+            for (int i = 0; i < 9; i++)
+            {
+                if (checkBox(i, j, n))
+                {
+                    options++;
+                    if (options > 1)
+                    {
+                        break;
+                    }
+                    answeri = i;
+                }
+            }
+            // if only one box in this column can be n, success
+            if (options == 1)
+            {
+                sudoku[answeri][j] = n;
+                meth2 = true;
+            }
+        }
+        for (int i = 0; i <= 6; i += 3)
+        {
+            for (int j = 0; j <= 6; j += 3)
+            {
+                // keep track of how many boxes in this 3x3 box can be n
+                options = 0;
+                for (int ii = i; ii < i + 3; ii++)
+                {
+                    for (int jj = j; jj < j + 3; jj++)
+                    {
+                        if (checkBox(ii, jj, n))
+                        {
+                            options++;
+                            if (options > 1)
+                            {
+                                break;
+                            }
+                            answeri = ii;
+                            answerj = jj;
+                        }
+                    }
+                }
+                // if only one box in this 3x3 box can be n, success
+                if (options == 1)
+                {
+                    sudoku[answeri][answerj] = n;
+                    meth2 = true;
+                }
+            }
+        }
+    }
+}
+ 
+// test if sudoku[i][j] may be n
+bool checkBox(int i, int j, char n)
+{
+    if (sudoku[i][j] != ' ')
+        return false;
+    // search this column for n
+    for (int ii = 0; ii < 9; ii++)
+    {
+        if (sudoku[ii][j] == n)
+        {
+            return false;
+        }
+    }
+    // search this row for n
+    for (int jj = 0; jj < 9; jj++)
+    {
+        if (sudoku[i][jj] == n)
+        {
+            return false;
+        }
+    }
+    // search this 3x3 box for n
+    for (int ii = i - (i % 3); ii < i - (i % 3) + 3; ii++)
+    {
+        for (int jj = j - (j % 3); jj < j - (j % 3) + 3; jj++)
+        {
+            if (sudoku[ii][jj] == n)
+            {
+                return false;
+            }
+        }
+    }
+  return true;
+}
